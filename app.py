@@ -1,87 +1,74 @@
 from flask import Flask, request, jsonify
+import sqlite3
 
 app = Flask(__name__)
-notes_list = [
-        {
-            "id": 1,
-            "title": "create flask project",
-            "detail": "this is more detail on the note"
-        },
-        {
-            "id": 2,
-            "title": "setup database",
-            "detail": "install SQLAlchemy and create models"
-        },
-        {
-            "id": 3,
-            "title": "create API endpoints",
-            "detail": "implement REST API for CRUD operations"
-        },
-        {
-            "id": 4,
-            "title": "add authentication",
-            "detail": "implement JWT authentication system"
-        },
-        {
-            "id": 5,
-            "title": "deploy application",
-            "detail": "deploy to production server using gunicorn"
-        }
-    ]
-@app.route("/notes", methods=["GET", "POST"])
+def db_connection():
+    conn = None
+    try:
+        conn = sqlite3.connect("notes.sqlite")
+    except sqlite3.error as e:
+        print("Error connecting to data {err}".format(err=e))
+
+    return conn
+@app.route('/notes', methods=['GET', 'POST'])
 def get_notes():
-    if request.method == 'GET':
-        print("here")
-        return jsonify(notes_list)
+    conn = db_connection()
+    cursor = conn.cursor()
 
+    if request.method == 'GET':
+        cursor = conn.execute("SELECT * FROM notes")
+        notes = [
+            dict(id=row[0], title=row[1],detail=row[2],created_at=row[3])
+            for row in cursor.fetchall()
+        ]
+        if notes is not None:
+            return jsonify(notes)
+        else:
+            return "No Notes found in database", 200
+        
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        type = request.form['type']
-        id = 'note_'+ str(len(notes_list)+1)
+        data =  request.get_json()
 
-        print("welcome", title, content, type)
+        title = data.get('title')
+        detail = data.get('detail')
 
-        new_obj = {
-            'title': title,
-            'content': content,
-            'type': type,
-            'id': id,
-        }
+        sql = """INSERT INTO notes (title, detail)
+        VALUES (?, ?)
+        """
+        cursor.execute(sql, (title, detail))
+        conn.commit()
+        return jsonify({
+            "id": cursor.lastrowid,
+            "title": title,
+            "detail": detail,
+        }), 201
 
-        notes_list.append(new_obj)
-        return jsonify(new_obj), 201
-    
-    
-@app.route('/notes/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-def single_book(id):
+@app.route('/notes/<int:id>', methods=['GET', 'DELETE'])
+def note_operations(id):
+    conn = db_connection()
+    cursor = conn.cursor()
+
     if request.method == 'GET':
-        for note in notes_list:
-            if note['id'] == id:
-                return jsonify(note)
-            pass
-    
-    if request.method == 'PUT':
-        for index,note in enumerate(notes_list):
-            if note['id'] == id:
-                data =  request.get_json()
-                note['title'] = data.get('title')
-                note['detail'] = data.get('detail')
-                updated_note = {
-                    'id': id,
-                    'title': note['title'],
-                    'detail': note['detail']
-                }
+        cursor.execute("SELECT * FROM notes WHERE id=?", (id,))
+        note = cursor.fetchone()
+        
+        if note is not None:
+            return jsonify({
+                "id": note[0],
+                "title": note[1],
+                "detail": note[2],
+                "created_at": note[3]
+            })
+        return jsonify({"message": "Note not found"}), 404
 
-                notes_list[index] = updated_note
-
-                return jsonify(updated_note)
-            
     if request.method == 'DELETE':
-        for index, note in enumerate(notes_list):
-            if note['id'] == id:
-                notes_list.pop(index)
-                return jsonify(notes_list)
+        cursor.execute("DELETE FROM notes WHERE id=?", (id,))
+        conn.commit()
+        
+        return jsonify({
+            "message": f"Note {id} deleted successfully"
+        }), 200
+
 
 
 if __name__ == '__main__':

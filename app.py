@@ -1,7 +1,21 @@
 from flask import Flask, request, jsonify
 import sqlite3
+from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
+# malformed json data - validation
+# sql injection vulnerability
+# improperly handled error message eg for 500 errors
+# concurrency issues 
 app = Flask(__name__)
+
+cors = CORS(app) # allow CORS for all domains on all routes.
+app.config['CORS_HEADERS'] = 'Content-Type'
+
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Or even simpler:
+CORS(app)
 def db_connection():
     conn = None
     try:

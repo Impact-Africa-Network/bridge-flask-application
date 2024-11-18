@@ -23,7 +23,8 @@ flask  --debug run
 install jwt
 
 ```shell
-pip install jwt
+pip install PyJWT
+
 ```
 
 install sqlalchemy

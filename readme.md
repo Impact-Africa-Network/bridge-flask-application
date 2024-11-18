@@ -18,3 +18,23 @@ python db.py
 flask  --debug run
 ```
 
+
+
+install jwt
+
+```shell
+pip install jwt
+```
+
+install sqlalchemy
+
+```shell
+pip install sqlalchemy
+```
+
+```shell
+pip install bcrypt
+
+```
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'

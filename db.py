@@ -4,14 +4,30 @@ conn = sqlite3.connect('notes.sqlite')
 
 cursor =  conn.cursor()
 
+# Create users table
+users_table = """
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        email TEXT UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+"""
+cursor.execute(users_table)
 
-sql_query = """
+notes_table = """
     CREATE TABLE IF NOT EXISTS notes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         detail TEXT NOT NULL,
+        user_id INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
 """
 
-cursor.execute(sql_query)
+cursor.execute(notes_table)
+
+# # Commit the changes and close the connection
+# conn.commit()
+# conn.close()
